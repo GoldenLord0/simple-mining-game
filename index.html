@@ -7,11 +7,71 @@
 
 	<style type="text/css">
 		
-		html, body {
+		html, body{
 			width:  100%;
 			height: 100%;
 			margin: 0px;
 			overflow: hidden;
+		}
+
+		#canvas {
+			background-color: #000000;
+		}
+
+		#testing-menu {
+			width: 250px;
+			overflow-y: auto;
+		}
+
+		#testing-menu, #testing-menu-inside {
+			position: absolute;
+			right: 0;
+			top: 0;
+			height: 200%;
+			background-color: grey;
+		}
+
+		#testing-menu-inside {
+			left: 10px;
+			width: 240px;
+		}
+
+		.first-collumn, .second-collumn {
+			width: 50%;
+			display: inline-block;
+		}
+
+		.second-collumn {
+			position: absolute;
+			right: 0;
+		}
+
+		p, input {
+			display: inline-block;
+			margin: 0;
+			padding: 1px;
+		}
+
+		input {
+			width: 50px;
+			height: 10px;
+		}
+
+		h3 {
+			margin: 10px 0 10px 0;
+			text-align: center;
+		}
+
+		h4 {
+			margin: 25px 0 10px 0;
+		}
+
+		.invisible {
+			color: grey;
+		}
+
+		button {
+			margin-top: 5px;
 		}
 
 	</style>
@@ -22,7 +82,208 @@
 
 <canvas id="canvas">Your browser doesn't support HTML5</canvas>
 
+<div id="testing-menu">
+
+	<div id="testing-menu-inside">
+
+		<h3>Player properties:</h3>
+
+		<div class="first-collumn">
+			
+			<p>x:</p></br>
+			<p>y:</p></br>
+			<p>Speed:</p></br>
+			<p>Sight:</p></br>
+			<p>HP:</p></br>
+			<p>Max HP:</p></br>
+			<p>Stamina:</p></br>
+			<p>Max Stamina:</p></br>
+			<p>Tile Index:</p></br>
+			<p>Tile X Index:</p></br>
+			<p>Tile Y Index:</p></br>
+
+		</div>
+
+		<div class="second-collumn">
+			
+			<input type="text" name="x" id="player-x">
+			<p id="player-x-show">0</p>
+
+			<input type="text" name="y" id="player-y">
+			<p id="player-y-show">0</p>
+
+			<input type="text" name="speed" id="player-speed">
+			<p id="player-speed-show">0</p>	
+
+			<input type="text" name="sight" id="player-sight">
+			<p id="player-sight-show">0</p>
+
+			<input type="text" name="hp" id="player-hp">
+			<p id="player-hp-show">0</p>
+
+			<input type="text" name="max-hp" id="player-max-hp">
+			<p id="player-max-hp-show">0</p>					
+
+			<input type="text" name="stamina" id="player-stamina">
+			<p id="player-stamina-show">0</p>
+
+			<input type="text" name="stamina" id="player-max-stamina">
+			<p id="player-max-stamina-show">0</p>
+
+			<input style="visibility: hidden" type="text" name="invs">
+			<p id="player-tile-index-show">0</p>
+
+			<input style="visibility: hidden" type="text" name="invs">
+			<p id="player-tile-x-index-show">0</p>
+
+			<input style="visibility: hidden" type="text" name="invs">
+			<p id="player-tile-y-index-show">0</p>																						
+			
+		</div>	
+
+		<h3>Grid properties:</h3>	
+
+		<div class="first-collumn">
+			
+			<p>Collumns:</p></br>
+			<p>Rows: </p></br>
+			<p>Tile size: </p></br>
+
+		</div>
+
+		<div class="second-collumn">
+			
+			<input type="text" name="collumns" id="grid-collumns">
+			<p id="grid-collumns-show">0</p>
+
+			<input type="text" name="rows" id="grid-rows">
+			<p id="grid-rows-show">0</p>
+
+			<input type="text" name="tilesize" id="tile-size">
+			<p id="tile-size-show">0</p>
+				
+		</div>		
+
+		</br>
+		</br>
+		
+		<button onclick="generateNewGrid()">Generate new grid</button>
+
+		<h3>Edit Grid:</h3>
+
+		<h4>Tile:</h4>
+
+		<div class="first-collumn">
+			
+			<p>Index:</p></br>
+			<p>Content:</p></br>
+			<p class="invisible">.</p></br>
+			<p><i>or</i></p></br>
+			<p class="invisible">.</p></br>
+			<p>X Index:</p></br>
+			<p>Y Index:</p></br>
+			<p>Content:</p></br>			
+
+		</div>
+
+		<div class="second-collumn">
+			
+			<input type="text" name="index" id="tile-index">
+			<p class="invisible">.</p>
+
+			<input type="text" name="content" id="tile-content">		
+			<p class="invisible">.</p></br>	
+
+			<button id="edit-tile-button">Edit</button>	</br>	
+
+			<input style="visibility: hidden" type="text" name="invs"></br>
+
+			<input style="visibility: hidden" type="text" name="invs"></br>
+
+
+			<input type="text" name="x-index" id="tile-x-index">
+			<p class="invisible">.</p>	
+
+			<input type="text" name="y-index" id="tile-y-index">
+			<p class="invisible">.</p>	
+
+			<input type="text" name="content" id="tile-content-two">		
+			<p class="invisible">.</p></br>				
+
+			<button id="edit-tile-two-axis-button">Edit</button>			
+			
+		</div>	
+
+		<h4>Collumn:</h4>
+
+		<div class="first-collumn">
+			
+			<p>X Index:</p></br>
+			<p>Content:</p></br>
+			<p class="invisible">.</p></br>
+
+		</div>
+
+		<div class="second-collumn">
+			
+			<input type="text" name="index" id="collumn-index">
+			<p class="invisible">.</p>
+
+			<input type="text" name="content" id="collumn-content">		
+			<p class="invisible">.</p></br>	
+
+			<button id="edit-collumn-button">Edit</button>											
+			
+		</div>		
+
+		<h4>Row:</h4>
+
+		<div class="first-collumn">
+			
+			<p>Y Index:</p></br>
+			<p>Content:</p></br>
+			<p class="invisible">.</p></br>
+
+		</div>
+
+		<div class="second-collumn">
+			
+			<input type="text" name="index" id="row-index">
+			<p class="invisible">.</p>
+
+			<input type="text" name="content" id="row-content">		
+			<p class="invisible">.</p></br>	
+
+			<button id="edit-row-button">Edit</button>											
+			
+		</div>		
+
+		<h4>Tile Types:</h4>
+
+		<div class="first-collumn">
+			
+			<p>0:</p></br>
+			<p>1:</p></br>
+			<p>2:</p></br>
+			<p>3:</p></br>
+
+		</div>
+
+		<div class="second-collumn">
+			
+			<p>Empty ground</p></br>
+			<p>Ground</p></br>
+			<p>Stone</p></br>
+			<p>Coal</p></br>							
+			
+		</div>							
+
+	</div>
+
+</div>
+
 <script type="text/javascript" src="jquery-3.3.1.min.js"></script>
+<script type="text/javascript" src="jquery.mousewheel.min.js"></script>
 <script type="text/javascript" src="index.js"></script>
 
 </body>

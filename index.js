@@ -368,23 +368,35 @@ Miner.prototype.update = function(dt, worldBoundW, worldBoundH, grid) {
 
 	// Movement
 	if(keys[87] || keys[38]) {
-		//	W or Up Arrow
+		// W or Up Arrow
 		this.velY = -this.speed * dt;
 
 	}
 	if(keys[83] || keys[40]) {
-		//	S or Down Arrow
+		// S or Down Arrow
 		this.velY = this.speed * dt;
 
 	}
 	if(keys[65] || keys[37]) {
-		//	A or Left Arrow
+		// A or Left Arrow
 		this.velX = -this.speed * dt;
 
 	}
 	if(keys[68] || keys[39]) {
-		//	D or Right Arrow
+		// D or Right Arrow
 		this.velX = this.speed * dt;
+
+	}
+
+	// Mining
+	if(keys[32]) {
+		// Space
+		this.isMining = true;
+
+	}
+	else {
+
+		this.isMining = false;
 
 	}
 
@@ -402,6 +414,8 @@ Miner.prototype.update = function(dt, worldBoundW, worldBoundH, grid) {
 
 	// collision stuff
 	var tilesToCheckCollisionsFor = getRadiusTiles(this.currentTile, grid.rows);
+
+	var collidedTile = 0;
 
 	this.x += this.velX;
 
@@ -448,6 +462,27 @@ Miner.prototype.update = function(dt, worldBoundW, worldBoundH, grid) {
 		}
 
 	}	
+
+	// mining stuff
+	if(this.isMining) {
+
+		var possibleMiningTiles = getAdjacentTiles(this.currentTile, grid.rows);
+
+		var tileToMine = -1;
+
+		if(this.velY < 0) tileToMine = possibleMiningTiles[0];
+		if(this.velY > 0) tileToMine = possibleMiningTiles[1];
+		if(this.velX < 0) tileToMine = possibleMiningTiles[2];
+		if(this.velX > 0) tileToMine = possibleMiningTiles[3];
+
+		try {
+
+			grid.setTileContent(tileToMine, 0);
+
+		}
+		catch(e) {}
+
+	}
 
 
 	// prevent player from going outside world boundaries

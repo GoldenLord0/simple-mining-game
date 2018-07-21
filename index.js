@@ -6,7 +6,7 @@ var underground, camera, mouse, player, keys;
 var lastTime;
 
 
-function Tile(x, y, size, type) {
+function Tile(x, y, size, type, hp) {
 
 	this.x = x;
 	this.y = y;
@@ -14,7 +14,97 @@ function Tile(x, y, size, type) {
 	this.size = size;
 	this.type = type;
 
+	this.hp = hp;
+
+	this.red = 0;
+	this.green = 0;
+	this.blue = 0;
+
+	if(this.type == 0) {
+
+		this.red = 61;
+		this.green = 37;
+		this.blue = 13;
+
+	}
+	else if(this.type == 1) {
+
+		this.red = 122;
+		this.green = 79;
+		this.blue = 36;
+
+	}	
+	else if(this.type == 2) {
+
+		this.red = 40;
+		this.green = 40;
+		this.blue = 40;
+
+	}	
+	else if(this.type == 3) {
+
+		this.red = 135;
+		this.green = 135;
+		this.blue = 135;
+
+	}	
+
 } 
+
+Tile.prototype.setContent = function(content) {
+
+	this.type = content;
+
+	if(this.type == 0) {
+
+		this.red = 61;
+		this.green = 37;
+		this.blue = 13;
+
+	}
+	else if(this.type == 1) {
+
+		this.red = 122;
+		this.green = 79;
+		this.blue = 36;
+
+	}	
+	else if(this.type == 2) {
+
+		this.red = 40;
+		this.green = 40;
+		this.blue = 40;
+
+	}	
+	else if(this.type == 3) {
+
+		this.red = 135;
+		this.green = 135;
+		this.blue = 135;
+
+	}		
+
+}
+
+Tile.prototype.flash = function() {
+
+	var flashValue = 20;
+
+	this.red -= flashValue;
+	this.green -= flashValue;
+	this.blue -= flashValue;
+
+	setTimeout(() => {
+
+		if(this.type == 0) return;
+
+		this.red += flashValue;
+		this.green += flashValue;
+		this.blue += flashValue;
+
+	}, 100);
+
+}
 
 Tile.prototype.draw = function() {
 
@@ -24,27 +114,9 @@ Tile.prototype.draw = function() {
 	if(xDrawPos < -this.size || xDrawPos > W || yDrawPos < -this.size || yDrawPos > H) return;
 
 	ctx.lineWidth = 1;
+	ctx.strokeStyle = '#000000';
 
-	if(this.type == 0) {
-
-		ctx.fillStyle = '#4c2e10';
-
-	}
-	else if(this.type == 1) {
-
-		ctx.fillStyle = '#824f1c';
-
-	}
-	else if(this.type == 2) {
-
-		ctx.fillStyle = '#a59f9a';
-
-	}
-	else if(this.type == 3) {
-
-		ctx.fillStyle = '#262524';
-
-	}	
+	ctx.fillStyle = 'rgb(' + this.red + ',' + this.green + ',' + this.blue + ')';
 
 	ctx.strokeRect(xDrawPos, yDrawPos, this.size, this.size);
 	ctx.fillRect(xDrawPos, yDrawPos, this.size, this.size);	
@@ -54,8 +126,8 @@ Tile.prototype.draw = function() {
 /*	Types of tiles (underground):
 		0 - empty 
 		1 - ground
-		2 - rock
-		3 - coal
+		2 - coal
+		3 - stone
 */
 
 function Grid() {
@@ -132,13 +204,13 @@ Grid.prototype.setContentPercentage = function(content) {
 
 Grid.prototype.setTileContent = function(index, content) {
 
-	this.tiles[index].type = content;
+	this.tiles[index].setContent(content);
 
 }
 
 Grid.prototype.setTileContentTwoAxis = function(xIndex, yIndex, content) {
 
-	this.tiles[xIndex + (yIndex * this.rows)].type = content;
+	this.tiles[xIndex + (yIndex * this.rows)].setContent(content);
 
 }
 
@@ -146,7 +218,7 @@ Grid.prototype.setTileRowContent = function(row, content) {
 
 	for (var i = row * this.rows; i < (row * this.rows) + this.rows; i++) {
 
-		this.tiles[i].type = content;
+		this.tiles[i].setContent(content);
 
 	}
 
@@ -156,9 +228,32 @@ Grid.prototype.setTileCollumnContent = function(collumn, content) {
 
 	for (var i = collumn; i < collumn + (this.rows * this.collumns); i += this.rows) {
 
-		this.tiles[i].type = content;
+		this.tiles[i].setContent(content);
 
 	}
+
+}
+
+Grid.prototype.damageTile = function(index, damage) {
+
+	var thisTile = this.tiles[index];
+
+	thisTile.hp -= damage;
+
+	thisTile.flash();
+
+	var returnValue = {type: 0, isDead: false};
+
+	if(thisTile.hp <= 0) {
+
+		returnValue.type = thisTile.type;
+		returnValue.isDead = true;
+
+		thisTile.setContent(0);
+
+	}
+
+	return returnValue;
 
 }
 
@@ -196,7 +291,7 @@ Grid.prototype.generateTiles = function() {
 
 			var tileType = weightedArray[Math.floor(Math.random() * weightedArray.length)];
 
-			var tile = new Tile(j * this.tileSize, i * this.tileSize, this.tileSize, tileType);
+			var tile = new Tile(j * this.tileSize, i * this.tileSize, this.tileSize, tileType, tileType * 2);
 
 			this.tiles.push(tile);
 
@@ -310,7 +405,7 @@ function Miner(x, y) {
 	this.velX = 0;
 	this.velY = 0;
 
-	this.speed = 500;
+	this.speed = 200;
 
 	this.sight = 6;
 
@@ -319,6 +414,18 @@ function Miner(x, y) {
 
 	this.currentTile = 0;
 	this.radiusTiles = [];
+
+	this.isMining = false;
+	this.canMine = true;
+	this.mineSpeed = 250;
+
+	this.inventory = new Inventory();
+
+}
+
+Miner.prototype.collect = function(item) {
+
+	this.inventory.addItem(item);
 
 }
 
@@ -364,6 +471,81 @@ Miner.prototype.getTile = function(gridTileSize, gridRows) {
 
 }
 
+Miner.prototype.setMineDelay = function() {
+
+	this.canMine = false;
+
+	setTimeout(() => {
+
+		this.canMine = true;
+
+	}, this.mineSpeed);
+
+}
+
+Miner.prototype.collisionAndMine = function(grid, tilesAroundPlayer, tilesAdjacentOnAxis, vel, pos, asize) {
+
+	for (var i = 0; i < tilesAroundPlayer.length; i++) {
+
+		var tileIndex = tilesAroundPlayer[i];
+		var tileObject = grid.tiles[tilesAroundPlayer[i]];
+
+		var collision = checkCollision(this, tileObject, null, 'size');
+
+		if(collision.happened) {
+
+			if(this.isMining) {
+
+				if(tilesAdjacentOnAxis.indexOf(tileIndex) != -1 && tileObject.type != 0) {
+
+					var damagedTile = grid.damageTile(tileIndex, 1);
+
+					// collecting stuff
+					if(damagedTile.isDead) {
+
+						if(damagedTile.type == 2) {
+
+							this.collect(new Items.Coal());
+
+						}
+						else if(damagedTile.type == 3) {
+
+							this.collect(new Items.Stone());
+
+						}
+
+					}
+
+					this.setMineDelay();
+
+				}
+
+			}
+			else {
+
+				if(tileObject.type != 0) {
+
+					if(this[vel] < 0) {
+
+						this[pos] = tileObject[pos] + tileObject.size;
+
+					}
+					else if(this[vel] > 0) {
+
+						this[pos] = tileObject[pos] - this[asize];
+
+					}				
+
+				}
+
+			}
+
+		}
+
+	}
+
+}
+
 Miner.prototype.update = function(dt, worldBoundW, worldBoundH, grid) {
 
 	// Movement
@@ -372,19 +554,30 @@ Miner.prototype.update = function(dt, worldBoundW, worldBoundH, grid) {
 		this.velY = -this.speed * dt;
 
 	}
-	if(keys[83] || keys[40]) {
+	else if(keys[83] || keys[40]) {
 		// S or Down Arrow
 		this.velY = this.speed * dt;
 
 	}
+	else {
+
+		this.velY = 0;
+
+	}
+
 	if(keys[65] || keys[37]) {
 		// A or Left Arrow
 		this.velX = -this.speed * dt;
 
 	}
-	if(keys[68] || keys[39]) {
+	else if(keys[68] || keys[39]) {
 		// D or Right Arrow
 		this.velX = this.speed * dt;
+
+	}
+	else {
+
+		this.velX = 0;
 
 	}
 
@@ -400,89 +593,40 @@ Miner.prototype.update = function(dt, worldBoundW, worldBoundH, grid) {
 
 	}
 
-	// If none of the movement keys are pressed, set the velocity to 0
-	if(!keys[87] && !keys[38] && !keys[83] && !keys[40]) {
+	// Prevent player from digging in diagonal direction
+	if(this.isMining && (keys[87] || keys[38] || keys[83] || keys[40]) && (keys[65] || keys[37] || keys[68] || keys[39])) {
 
-		this.velY = 0;
-
-	}
-	if(!keys[65] && !keys[37] && !keys[68] && !keys[39]) {
-
-		this.velX = 0;
+		this.isMining = false;
 
 	}	
 
-	// collision stuff
-	var tilesToCheckCollisionsFor = getRadiusTiles(this.currentTile, grid.rows);
+	// disable mining
+	if(!this.canMine) {
 
-	var collidedTile = 0;
+		this.isMining = false;
+
+	}
+
+
+	var tilesAroundPlayer = getRadiusTiles(this.currentTile, grid.rows);	
+	var tilesAdjacentToPlayer = getAdjacentTiles(this.currentTile, grid.rows);
+
+	var tilesInCorners = tilesAroundPlayer.filter(element => {
+
+		return !(tilesAdjacentToPlayer.includes(element));
+
+	});
+
+	var tilesAdjacentOnX = tilesAdjacentToPlayer.slice(2, 4);
+	var tilesAdjacentOnY = tilesAdjacentToPlayer.slice(0, 2);
 
 	this.x += this.velX;
 
-	for (var i = 0; i < tilesToCheckCollisionsFor.length; i++) {
+	this.collisionAndMine(grid, tilesAroundPlayer, tilesAdjacentOnX, "velX", "x", "w");	
 
-		var collision = checkCollision(this, grid.tiles[tilesToCheckCollisionsFor[i]], null, 'size');
+	this.y += this.velY;
 
-		if(collision.happened && collision.collided.type != 0) {
-
-			if(this.velX < 0) {
-
-				this.x = collision.collided.x + collision.collided.size;
-
-			}
-			else if(this.velX > 0) {
-
-				this.x = collision.collided.x - this.w;
-
-			}
-
-		}
-
-	}
-
-	this.y += this.velY;	
-
-	for (var i = 0; i < tilesToCheckCollisionsFor.length; i++) {
-
-		var collision = checkCollision(this, grid.tiles[tilesToCheckCollisionsFor[i]], null, 'size');
-
-		if(collision.happened && collision.collided.type != 0) {
-
-			if(this.velY < 0) {
-
-				this.y = collision.collided.y + collision.collided.size;
-
-			}
-			else if(this.velY > 0) {
-
-				this.y = collision.collided.y - this.h;
-
-			}
-
-		}
-
-	}	
-
-	// mining stuff
-	if(this.isMining) {
-
-		var possibleMiningTiles = getAdjacentTiles(this.currentTile, grid.rows);
-
-		var tileToMine = -1;
-
-		if(this.velY < 0) tileToMine = possibleMiningTiles[0];
-		if(this.velY > 0) tileToMine = possibleMiningTiles[1];
-		if(this.velX < 0) tileToMine = possibleMiningTiles[2];
-		if(this.velX > 0) tileToMine = possibleMiningTiles[3];
-
-		try {
-
-			grid.setTileContent(tileToMine, 0);
-
-		}
-		catch(e) {}
-
-	}
+	this.collisionAndMine(grid, tilesAroundPlayer, tilesAdjacentOnY, "velY", "y", "h");
 
 
 	// prevent player from going outside world boundaries
@@ -521,6 +665,135 @@ Miner.prototype.draw = function(tileSize) {
 
 }
 
+
+function Items() {
+
+	this.name = '';
+	this.value = 0;
+	this.weight = 0;
+	this.displayColor = '#ffffff';
+
+}
+
+Items.Coal = function() {
+
+	this.name = 'Coal';
+	this.value = 10;
+	this.weight = 5;
+	this.displayColor = '#202020';
+
+}
+
+Items.Stone = function() {
+
+	this.name = 'Stone';
+	this.value = 1;
+	this.weight = 5;
+	this.displayColor = '#6C6C6C';
+
+}
+
+function Inventory() {
+
+	this.content = [];
+
+	this.visible = false;
+
+	this.grid = [];
+	this.slotSize = 100;
+
+	var rows = 6;
+	var collumns = 8;	
+	var slotSize = this.slotSize;
+
+	for (var i = 0; i < rows; i++) {
+
+		for (var j = 0; j < collumns; j++) {
+
+			this.grid.push({x: j * slotSize + slotSize * j + slotSize, y: i * slotSize + slotSize * i + slotSize});
+
+		}
+
+	}
+
+	console.log(this.grid)
+
+}
+
+Inventory.prototype.addItem = function(adding) {
+
+	if(!(this.content.some(item => item.name == adding.name))) {
+
+		this.content.push({name: adding.name, amount: 1, displayColor: adding.displayColor});
+
+	}
+	else {
+
+		var index = this.content.findIndex(item => item.name == adding.name);
+
+		this.content[index].amount += 1;
+
+	}
+
+	console.log(this.content);
+
+} 
+
+Inventory.prototype.show = function() {
+
+	console.log('show');
+
+	this.visible = true;
+
+}
+
+Inventory.prototype.hide = function() {
+
+	console.log('hide');
+
+	this.visible = false;
+
+}
+
+Inventory.prototype.update = function() {
+
+
+
+}
+
+Inventory.prototype.draw = function() {
+
+	if(!this.visible) return;
+
+	var xoffset = 100;
+	var yoffset = 100;
+	var alpha = 0.7;
+	var radius = 20;
+
+	ctx.fillStyle = 'rgba(129, 136, 145, ' + alpha + ')';
+	ctx.strokeStyle = 'rgba(64, 67, 71, ' + alpha + ')';
+	ctx.lineWidth = 24;	
+	roundRect(ctx, xoffset, yoffset, W - xoffset * 2, H - yoffset * 2, radius, true, true);
+
+	ctx.strokeStyle = '#353b42';
+	ctx.lineWidth = 10;
+
+	for (var i = 0; i < this.content.length; i++) {
+
+		ctx.fillStyle = this.content[i].displayColor;
+
+		roundRect(ctx, xoffset + this.grid[i].x, yoffset + this.grid[i].y, this.slotSize, this.slotSize, 5, true, true);
+
+		ctx.font = '25px Arial';
+		ctx.fillStyle = '#000000';
+
+		ctx.fillText(this.content[i].amount + 'x', xoffset + this.grid[i].x + this.slotSize * 1.2, yoffset + this.grid[i].y + this.slotSize);
+
+	}
+
+}
+
+// logic functions --------------------------------------------------------------------
 
 function getRadiusTiles(tile, rows, range = 1) {
 
@@ -623,6 +896,83 @@ function checkCollision(a, b, aSizePropName = null, bSizePropName = null) {
 
 }
 
+// rendering functions --------------------------------------------------------------------
+
+/**
+ * Draws a rounded rectangle using the current state of the canvas.
+ * If you omit the last three params, it will draw a rectangle
+ * outline with a 5 pixel border radius
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {Number} x The top left x coordinate
+ * @param {Number} y The top left y coordinate
+ * @param {Number} width The width of the rectangle
+ * @param {Number} height The height of the rectangle
+ * @param {Number} [radius = 5] The corner radius; It can also be an object 
+ *                 to specify different radii for corners
+ * @param {Number} [radius.tl = 0] Top left
+ * @param {Number} [radius.tr = 0] Top right
+ * @param {Number} [radius.br = 0] Bottom right
+ * @param {Number} [radius.bl = 0] Bottom left
+ * @param {Boolean} [fill = false] Whether to fill the rectangle.
+ * @param {Boolean} [stroke = true] Whether to stroke the rectangle.
+ */
+// got this code from StackOverflow, it was written by Juan Mendes (https://stackoverflow.com/users/227299/juan-mendes)
+function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
+
+	if(typeof stroke == 'undefined') {
+
+		stroke = true;
+
+	}
+
+	if(typeof radius === 'undefined') {
+
+		radius = 5;
+
+	}
+
+	if(typeof radius === 'number') {
+
+		radius = {tl: radius, tr: radius, br: radius, bl: radius};
+
+	} 
+	else {
+
+		var defaultRadius = {tl: 0, tr: 0, br: 0, bl: 0};
+
+		for (var side in defaultRadius) {
+
+			radius[side] = radius[side] || defaultRadius[side];
+
+		}
+
+	}
+
+	ctx.beginPath();
+	ctx.moveTo(x + radius.tl, y);
+	ctx.lineTo(x + width - radius.tr, y);
+	ctx.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
+	ctx.lineTo(x + width, y + height - radius.br);
+	ctx.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
+	ctx.lineTo(x + radius.bl, y + height);
+	ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
+	ctx.lineTo(x, y + radius.tl);
+	ctx.quadraticCurveTo(x, y, x + radius.tl, y);
+	ctx.closePath();
+
+	if(fill) {
+
+		ctx.fill();
+
+	}
+
+	if(stroke) {
+
+		ctx.stroke();
+
+	}
+
+}
 
 $(window).ready(() => {
 
@@ -643,7 +993,7 @@ $(window).ready(() => {
 	underground.setRows(200);
 	underground.setTileSize(50);
 
-	var contentTypesArray = [{type: 1, weight: 60}, {type: 2, weight: 1}, {type: 3, weight: 2}];
+	var contentTypesArray = [{type: 1, weight: 60}, {type: 2, weight: 2}, {type: 3, weight: 1}];
 
 	underground.setContentPercentage(contentTypesArray);
 	underground.generateTiles();
@@ -671,16 +1021,38 @@ $(window).ready(() => {
 
 });
 
+var inventoryFired = false;
 
 $(window).keydown(event => {
 
 	keys[event.which] = true;
+
+	// inventory stuff
+	if(keys[73] && !inventoryFired) {
+
+		inventoryFired = true;
+
+		if(!player.inventory.visible) {
+
+			player.inventory.show();
+
+		}
+		else {
+
+			player.inventory.hide();
+
+		}
+
+	}	
 
 });
 
 $(window).keyup(event => {
 
 	keys[event.which] = false;
+
+	// inventory stuff
+	inventoryFired = false;
 
 });
 
@@ -749,6 +1121,12 @@ $("#player-stamina").change(event => {
 $("#player-max-stamina").change(event => {
 
 	player.maxStamina = parseInt($("#player-max-stamina").val());
+
+});
+
+$("#player-mine-speed").change(event => {
+
+	player.mineSpeed = parseInt($("#player-mine-speed").val());
 
 });
 
@@ -828,6 +1206,7 @@ function update(dt) {
 	$("#player-max-hp-show").text(player.maxHP);	
 	$("#player-stamina-show").text(player.stamina);	
 	$("#player-max-stamina-show").text(player.maxStamina);	
+	$("#player-mine-speed-show").text(player.mineSpeed);	
 	$("#player-tile-index-show").text(player.currentTile);
 	$("#player-tile-x-index-show").text(player.currentTileXIndex);
 	$("#player-tile-y-index-show").text(player.currentTileYIndex);	
@@ -845,5 +1224,7 @@ function render() {
 	underground.draw(player.currentTile, player.sight, player.w, player.h, player.x, player.y);
 
 	player.draw(underground.tileSize);
+
+	player.inventory.draw();
 
 }

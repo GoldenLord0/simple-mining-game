@@ -99,6 +99,8 @@
 			<p>Max HP:</p></br>
 			<p>Stamina:</p></br>
 			<p>Max Stamina:</p></br>
+			<p>Warmness:</p></br>
+			<p>Max Warmness:</p></br>			
 			<p>Mining Speed:</p></br>
 			<p>Tile Index:</p></br>
 			<p>Tile X Index:</p></br>
@@ -108,31 +110,37 @@
 
 		<div class="second-collumn">
 			
-			<input type="text" name="x" id="player-x">
+			<input type="range" name="x" id="player-x">
 			<p id="player-x-show">0</p>
 
-			<input type="text" name="y" id="player-y">
+			<input type="range" name="y" id="player-y">
 			<p id="player-y-show">0</p>
 
-			<input type="text" name="speed" id="player-speed">
+			<input type="range" name="speed" id="player-speed">
 			<p id="player-speed-show">0</p>	
 
-			<input type="text" name="sight" id="player-sight">
+			<input type="range" name="sight" id="player-sight">
 			<p id="player-sight-show">0</p>
 
-			<input type="text" name="hp" id="player-hp">
+			<input type="range" name="hp" id="player-hp">
 			<p id="player-hp-show">0</p>
 
-			<input type="text" name="max-hp" id="player-max-hp">
+			<input type="range" name="max-hp" id="player-max-hp">
 			<p id="player-max-hp-show">0</p>					
 
-			<input type="text" name="stamina" id="player-stamina">
+			<input type="range" name="stamina" id="player-stamina">
 			<p id="player-stamina-show">0</p>
 
-			<input type="text" name="stamina" id="player-max-stamina">
+			<input type="range" name="max-stamina" id="player-max-stamina">
 			<p id="player-max-stamina-show">0</p>
 
-			<input type="text" name="stamina" id="player-mine-speed">
+			<input type="range" name="warmness" id="player-warmness">
+			<p id="player-warmness-show">0</p>
+
+			<input type="range" name="max-warmness" id="player-max-warmness">
+			<p id="player-max-warmness-show">0</p>			
+
+			<input type="range" name="mine-speed" id="player-mine-speed">
 			<p id="player-mine-speed-show">0</p>			
 
 			<input style="visibility: hidden" type="text" name="invs">
@@ -158,10 +166,10 @@
 
 		<div class="second-collumn">
 			
-			<input type="text" name="collumns" id="grid-collumns">
+			<input type="range" name="collumns" id="grid-collumns">
 			<p id="grid-collumns-show">0</p>
 
-			<input type="text" name="rows" id="grid-rows">
+			<input type="range" name="rows" id="grid-rows">
 			<p id="grid-rows-show">0</p>
 
 			<input type="text" name="tilesize" id="tile-size">

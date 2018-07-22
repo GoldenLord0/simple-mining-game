@@ -345,10 +345,9 @@ function Camera(w, h) {
 
 }
 
-Camera.prototype.setPos = function(x, y) {
+Camera.prototype.set = function(propName, value) {
 
-	this.x = x;
-	this.y = y;
+	this[propName] = value;
 
 }
 
@@ -402,6 +401,9 @@ function Miner(x, y) {
 	this.maxStamina = 20;
 	this.stamina = this.maxStamina;
 
+	this.maxWarmness = 20;
+	this.warmness = this.maxWarmness;
+
 	this.velX = 0;
 	this.velY = 0;
 
@@ -421,6 +423,33 @@ function Miner(x, y) {
 
 	this.inventory = new Inventory();
 
+	this.hpBar = new Bar()
+						  .set('xoffset', W - 50)
+						  .set('yoffset', 50)
+						  .set('w', 200)
+						  .set('h', 20)
+						  .set('value', this.HP)
+						  .set('maxValue', this.maxHP)
+						  .set('color', '#dd0f2e');
+
+	this.staminaBar = new Bar()
+							   .set('xoffset', W - 50)
+							   .set('yoffset', 90)
+							   .set('w', 200)
+							   .set('h', 20)
+							   .set('value', this.stamina)
+							   .set('maxValue', this.maxStamina)
+							   .set('color', '#d1db15');		
+
+	this.warmnessBar = new Bar()
+								.set('xoffset', W - 50)
+								.set('yoffset', 130)
+								.set('w', 200)
+								.set('h', 20)
+								.set('value', this.warmness)
+								.set('maxValue', this.maxWarmness)
+								.set('color', '#20a7d8');							  				  
+
 }
 
 Miner.prototype.collect = function(item) {
@@ -429,28 +458,9 @@ Miner.prototype.collect = function(item) {
 
 }
 
-Miner.prototype.setSpeed = function(spd) {
+Miner.prototype.set = function(propName, value) {
 
-	this.speed = spd;
-
-	return this.speed;
-
-}
-
-Miner.prototype.setSight = function(value) {
-
-	this.sight = value;
-
-	return this.sight;
-
-}
-
-Miner.prototype.setPos = function(xpos, ypos) {
-
-	this.x = xpos;
-	this.y = ypos;
-
-	return {x: xpos, y: ypos};
+	this[propName] = value;
 
 }
 
@@ -534,7 +544,7 @@ Miner.prototype.collisionAndMine = function(grid, tilesAroundPlayer, tilesAdjace
 
 						this[pos] = tileObject[pos] - this[asize];
 
-					}				
+					}	
 
 				}
 
@@ -548,7 +558,24 @@ Miner.prototype.collisionAndMine = function(grid, tilesAroundPlayer, tilesAdjace
 
 Miner.prototype.update = function(dt, worldBoundW, worldBoundH, grid) {
 
+	// save position before update
+	var lastX = this.x;
+	var lastY = this.y;
+
 	// Movement
+
+		// check if is moving at all
+		if(keys[87] || keys[38] || keys[83] || keys[40] || keys[65] || keys[37] || keys[68] || keys[39]) {
+
+			this.isMoving = true;
+
+		}
+		else {
+
+			this.isMoving = false;
+
+		}
+
 	if(keys[87] || keys[38]) {
 		// W or Up Arrow
 		this.velY = -this.speed * dt;
@@ -600,6 +627,22 @@ Miner.prototype.update = function(dt, worldBoundW, worldBoundH, grid) {
 
 	}	
 
+	// when stamina is empty, limit player capabilities
+	if(this.stamina <= 0) {
+
+		this.canMine = false;
+		this.velX *= 0.5;
+		this.velY *= 0.5;
+
+		this.HP -= 1 * dt;
+
+	}
+	else if(this.stamina >= 0 && this.canMine) {
+
+		this.canMine = true;		
+
+	}
+
 	// disable mining
 	if(!this.canMine) {
 
@@ -607,26 +650,51 @@ Miner.prototype.update = function(dt, worldBoundW, worldBoundH, grid) {
 
 	}
 
+	// drain stamina bar
+	if(this.isMoving) {
+
+		if(this.isMining) {
+
+			this.stamina -= 1 * dt;
+
+		}
+		else {
+
+			this.stamina -= 0.2 * dt;
+
+		}		
+
+	}
 
 	var tilesAroundPlayer = getRadiusTiles(this.currentTile, grid.rows);	
 	var tilesAdjacentToPlayer = getAdjacentTiles(this.currentTile, grid.rows);
 
-	var tilesInCorners = tilesAroundPlayer.filter(element => {
-
-		return !(tilesAdjacentToPlayer.includes(element));
-
-	});
-
 	var tilesAdjacentOnX = tilesAdjacentToPlayer.slice(2, 4);
 	var tilesAdjacentOnY = tilesAdjacentToPlayer.slice(0, 2);
 
+	/*var tilesAdjacentOnX = tilesAroundPlayer.slice(0);
+	var toBeRemovedOnX = [1, 7];
+	for (var i = 0; i < toBeRemovedOnX; i++) {
+
+		tilesAdjacentOnX.splice(toBeRemovedOnX[i], 1);
+
+	}
+
+	var tilesAdjacentOnY = tilesAroundPlayer.slice(0);
+	var toBeRemovedOnY = [1, 7];
+	for (var i = 0; i < toBeRemovedOnY; i++) {
+
+		tilesAdjacentOnY.splice(toBeRemovedOnY[i], 1);
+
+	}*/
+
 	this.x += this.velX;
 
-	this.collisionAndMine(grid, tilesAroundPlayer, tilesAdjacentOnX, "velX", "x", "w");	
+	this.collisionAndMine(grid, tilesAroundPlayer, tilesAdjacentOnX, 'velX', 'x', 'w');	
 
 	this.y += this.velY;
 
-	this.collisionAndMine(grid, tilesAroundPlayer, tilesAdjacentOnY, "velY", "y", "h");
+	this.collisionAndMine(grid, tilesAroundPlayer, tilesAdjacentOnY, 'velY', 'y', 'h');
 
 
 	// prevent player from going outside world boundaries
@@ -635,6 +703,34 @@ Miner.prototype.update = function(dt, worldBoundW, worldBoundH, grid) {
 
 	if(this.y < 0) this.y = 0;
 	else if(this.y + this.h > worldBoundH) this.y = worldBoundH - this.h;
+
+	// save new position after update
+	var newX = this.x;
+	var newY = this.y;
+
+	// check for any abnormal movements and revert back previous position if any occurs
+	var deltaX = Math.abs(newX - lastX);
+	var deltaY = Math.abs(newY - lastY);
+
+	// the check doesn't really work, I need something else to make it work properly (or fix the collision issue in a different way)
+
+	// bars
+	this.hpBar.set('value', this.HP)
+			  .set('maxValue', this.maxHP);
+
+	this.staminaBar.set('value', this.stamina)
+			  	   .set('maxValue', this.maxStamina);	
+
+	this.warmnessBar.set('value', this.warmness)
+			  		.set('maxValue', this.maxWarmness);				  	   
+
+	
+	// check for death
+	if(this.HP <= 0) {
+
+		gameOver();
+
+	}		  
 
 }
 
@@ -662,6 +758,11 @@ Miner.prototype.draw = function(tileSize) {
 
 	}
 	catch(e) {}
+
+	// bars
+	this.hpBar.draw();
+	this.staminaBar.draw();
+	this.warmnessBar.draw();
 
 }
 
@@ -700,23 +801,26 @@ function Inventory() {
 	this.visible = false;
 
 	this.grid = [];
-	this.slotSize = 100;
+	this.slotSize = 70;
 
-	var rows = 6;
-	var collumns = 8;	
+	this.xoffset = 100;
+	this.yoffset = 100;
+	this.alpha = 0.7;
+	this.radius = 20;	
+
+	this.rows = 3;
+	this.collumns = 5;	
 	var slotSize = this.slotSize;
 
-	for (var i = 0; i < rows; i++) {
+	for (var i = 0; i < this.rows; i++) {
 
-		for (var j = 0; j < collumns; j++) {
+		for (var j = 0; j < this.collumns; j++) {
 
-			this.grid.push({x: j * slotSize + slotSize * j + slotSize, y: i * slotSize + slotSize * i + slotSize});
+			this.grid.push({x: j * slotSize + slotSize * j + slotSize, y: i * slotSize + slotSize * i + slotSize * 1.5});
 
 		}
 
 	}
-
-	console.log(this.grid)
 
 }
 
@@ -765,33 +869,90 @@ Inventory.prototype.draw = function() {
 
 	if(!this.visible) return;
 
-	var xoffset = 100;
-	var yoffset = 100;
-	var alpha = 0.7;
-	var radius = 20;
-
-	ctx.fillStyle = 'rgba(129, 136, 145, ' + alpha + ')';
-	ctx.strokeStyle = 'rgba(64, 67, 71, ' + alpha + ')';
+	ctx.fillStyle = 'rgba(129, 136, 145, ' + this.alpha + ')';
+	ctx.strokeStyle = 'rgba(64, 67, 71, ' + this.alpha + ')';
 	ctx.lineWidth = 24;	
-	roundRect(ctx, xoffset, yoffset, W - xoffset * 2, H - yoffset * 2, radius, true, true);
+	roundRect(ctx, this.xoffset, this.yoffset, W - this.xoffset * 2, H - this.yoffset * 2, this.radius, true, true);
 
+	// top text
+	ctx.lineWidth = 5;
+	ctx.textAlign = 'center';
+	ctx.font = '50px Arial';
+	ctx.strokeStyle = '#000000';
+
+	ctx.strokeText('Inventory', W / 2, this.yoffset + 60);
+
+	// slots
 	ctx.strokeStyle = '#353b42';
 	ctx.lineWidth = 10;
 
-	for (var i = 0; i < this.content.length; i++) {
+	for (var i = 0; i < this.grid.length; i++) {
 
-		ctx.fillStyle = this.content[i].displayColor;
+		if(this.content[i] == undefined) {
 
-		roundRect(ctx, xoffset + this.grid[i].x, yoffset + this.grid[i].y, this.slotSize, this.slotSize, 5, true, true);
+			ctx.fillStyle = 'rgba(129, 136, 145, ' + this.alpha + ')';
 
-		ctx.font = '25px Arial';
-		ctx.fillStyle = '#000000';
+		}
+		else {
 
-		ctx.fillText(this.content[i].amount + 'x', xoffset + this.grid[i].x + this.slotSize * 1.2, yoffset + this.grid[i].y + this.slotSize);
+			ctx.font = '25px Arial';
+			ctx.fillStyle = '#000000';
+			ctx.fillText(this.content[i].amount + 'x', this.xoffset + this.grid[i].x + this.slotSize * 1.3, this.yoffset + this.grid[i].y + this.slotSize);
+
+			ctx.fillStyle = this.content[i].displayColor;
+
+		}
+
+		roundRect(ctx, this.xoffset + this.grid[i].x, this.yoffset + this.grid[i].y, this.slotSize, this.slotSize, 5, true, true);
 
 	}
 
 }
+
+
+function Bar() {
+
+	this.xoffset = 0;
+	this.yoffset = 0;
+
+	this.w = 100;
+	this.h = 25;
+
+	this.maxValue = 1;
+	this.value = 1;
+
+	this.color = '#ffffff';
+
+	return this;
+
+}
+
+Bar.prototype.set = function(propName, value) {
+
+	this[propName] = value;
+
+	return this;
+
+}
+
+Bar.prototype.draw = function() {
+
+	ctx.fillStyle = this.color;
+	ctx.strokeStyle = '#515151';
+	ctx.lineWidth = 5;
+
+	// filled part
+	if(this.value > 1) {
+
+		roundRect(ctx, W - this.xoffset, H - this.yoffset, (this.value / this.maxValue) * this.w, this.h, 10, true, false);
+
+	}
+
+	// stroked part
+	roundRect(ctx, W - this.xoffset, H - this.yoffset, this.w, this.h, 10, false, true);
+
+}
+
 
 // logic functions --------------------------------------------------------------------
 
@@ -843,9 +1004,9 @@ function getAdjacentTiles(tile, rows) {
 
 function generateNewGrid() {
 
-	underground.setCollumns(parseInt($("#grid-collumns").val()));
-	underground.setRows(parseInt($("#grid-rows").val()));
-	underground.setTileSize(parseInt($("#tile-size").val()));
+	underground.setCollumns(parseInt($('#grid-collumns').val()));
+	underground.setRows(parseInt($('#grid-rows').val()));
+	underground.setTileSize(parseInt($('#tile-size').val()));
 
 	underground.generateTiles();
 
@@ -1002,7 +1163,6 @@ $(window).ready(() => {
 	underground.setTileRowContent(7, 0);
 
 	camera = new Camera(W, H);
-	camera.setPos(underground.w / 2, underground.h / 2);
 
 	player = new Miner(500, 500);
 
@@ -1017,7 +1177,64 @@ $(window).ready(() => {
 
 	mainLoop();
 
-	player.setPos(350, 350);
+	player.set('x', 350);
+	player.set('y', 350);
+
+	// slider inputs max & min values
+	$('#player-x').attr({
+		min: 0,
+		max: underground.w
+	});
+
+	$('#player-y').attr({
+		min: 0,
+		max: underground.h
+	});	
+
+	$('#player-speed').attr({
+		min: 1,
+		max: 1000
+	});	
+
+	$('#player-sight').attr({
+		min: 3,
+		max: 15
+	});		
+
+	$('#player-hp').attr({
+		min: 0,
+		max: player.maxHP
+	});	
+
+	$('#player-max-hp').attr({
+		min: 1,
+		max: 500
+	});
+
+	$('#player-stamina').attr({
+		min: 0,
+		max: player.maxStamina
+	});		
+
+	$('#player-max-stamina').attr({
+		min: 1,
+		max: 500
+	});		
+
+	$('#player-warmness').attr({
+		min: 0,
+		max: player.maxWarmness
+	});		
+
+	$('#player-max-warmness').attr({
+		min: 1,
+		max: 500
+	});		
+
+	$('#player-mine-speed').attr({
+		min: 1,
+		max: 1000
+	});					
 
 });
 
@@ -1045,6 +1262,14 @@ $(window).keydown(event => {
 
 	}	
 
+	// cheats
+	if(event.which == 16) {
+
+		player.setSpeed(500);
+		player.setMineSpeed(1);
+
+	}
+
 });
 
 $(window).keyup(event => {
@@ -1052,7 +1277,15 @@ $(window).keyup(event => {
 	keys[event.which] = false;
 
 	// inventory stuff
-	inventoryFired = false;
+	if(event.which == 73) inventoryFired = false;
+
+	// cheats
+	if(event.which == 16) {
+
+		player.setSpeed(200);
+		player.setMineSpeed(250);
+
+	}
 
 });
 
@@ -1076,65 +1309,83 @@ $(window).contextmenu(event => {
 // -------------UI thingys----------------------
 
 // inputs
-$("#player-x").change(event => {
+$('#player-x').on('input', event => {
 
-	player.x = parseInt($("#player-x").val());
-
-});
-
-$("#player-y").change(event => {
-
-	player.y = parseInt($("#player-y").val());
+	player.set('x', parseInt($('#player-x').val()));
 
 });
 
-$("#player-speed").change(event => {
+$('#player-y').on('input', event => {
 
-	player.speed = parseInt($("#player-speed").val());
-
-});
-
-$("#player-sight").change(event => {
-
-	player.sight = parseInt($("#player-sight").val());
+	player.set('y', parseInt($('#player-y').val()));
 
 });
 
-$("#player-hp").change(event => {
+$('#player-speed').on('input', event => {
 
-	player.HP = parseInt($("#player-hp").val());
-
-});
-
-$("#player-max-hp").change(event => {
-
-	player.maxHP = parseInt($("#player-max-hp").val());
+	player.set('speed', parseInt($('#player-speed').val()));
 
 });
 
-$("#player-stamina").change(event => {
+$('#player-sight').on('input', event => {
 
-	player.stamina = parseInt($("#player-stamina").val());
-
-});
-
-$("#player-max-stamina").change(event => {
-
-	player.maxStamina = parseInt($("#player-max-stamina").val());
+	player.set('sight', parseInt($('#player-sight').val()));
 
 });
 
-$("#player-mine-speed").change(event => {
+$('#player-hp').on('input', event => {
 
-	player.mineSpeed = parseInt($("#player-mine-speed").val());
+	player.set('HP', parseInt($('#player-hp').val()));
+
+});
+
+$('#player-max-hp').on('input', event => {
+
+	player.set('maxHP', parseInt($('#player-max-hp').val()));
+
+	$('#player-hp').attr('max', player.maxHP); 
+
+});
+
+$('#player-stamina').on('input', event => {
+
+	player.set('stamina', parseInt($('#player-stamina').val()));
+
+});
+
+$('#player-max-stamina').on('input', event => {
+
+	player.set('maxStamina', parseInt($('#player-max-stamina').val()));
+
+	$('#player-stamina').attr('max', player.maxStamina); 
+
+});
+
+$('#player-warmness').on('input', event => {
+
+	player.set('warmness', parseInt($('#player-warmness').val()));
+
+});
+
+$('#player-max-warmness').on('input', event => {
+
+	player.set('maxWarmness', parseInt($('#player-max-warmness').val()));
+
+	$('#player-warmness').attr('max', player.maxWarmness); 
+
+});
+
+$('#player-mine-speed').on('input', event => {
+
+	player.set('mineSpeed', parseInt($('#player-mine-speed').val()));
 
 });
 
 // buttons
-$("#edit-tile-button").click(event => {
+$('#edit-tile-button').click(event => {
 
-	var index = parseInt($("#tile-index").val());
-	var content = parseInt($("#tile-content").val());
+	var index = parseInt($('#tile-index').val());
+	var content = parseInt($('#tile-content').val());
 
 	if(index == null || content == null) return;
 
@@ -1142,11 +1393,11 @@ $("#edit-tile-button").click(event => {
 
 });
 
-$("#edit-tile-two-axis-button").click(event => {
+$('#edit-tile-two-axis-button').click(event => {
 
-	var xIndex = parseInt($("#tile-x-index").val());
-	var yIndex = parseInt($("#tile-y-index").val());
-	var content = parseInt($("#tile-content-two").val());
+	var xIndex = parseInt($('#tile-x-index').val());
+	var yIndex = parseInt($('#tile-y-index').val());
+	var content = parseInt($('#tile-content-two').val());
 
 	if(xIndex == null || yIndex == null || content == null) return;
 
@@ -1154,10 +1405,10 @@ $("#edit-tile-two-axis-button").click(event => {
 
 });
 
-$("#edit-collumn-button").click(event => {
+$('#edit-collumn-button').click(event => {
 
-	var index = parseInt($("#collumn-index").val());
-	var content = parseInt($("#collumn-content").val());
+	var index = parseInt($('#collumn-index').val());
+	var content = parseInt($('#collumn-content').val());
 
 	if(index == null || content == null) return;
 
@@ -1165,16 +1416,18 @@ $("#edit-collumn-button").click(event => {
 
 });
 
-$("#edit-row-button").click(event => {
+$('#edit-row-button').click(event => {
 
-	var index = parseInt($("#row-index").val());
-	var content = parseInt($("#row-content").val());
+	var index = parseInt($('#row-index').val());
+	var content = parseInt($('#row-content').val());
 
 	if(index == null || content == null) return;
 
 	underground.setTileRowContent(index, content);
 
 });
+
+var gameLoop = true;
 
 function mainLoop() {
 
@@ -1187,7 +1440,11 @@ function mainLoop() {
 
 	lastTime = currentTime;
 
-	requestAnimationFrame(mainLoop);
+	if(gameLoop) {
+
+		requestAnimationFrame(mainLoop);
+
+	}
 
 }
 
@@ -1198,22 +1455,24 @@ function update(dt) {
 	player.getTile(underground.tileSize, underground.rows);
 
 	// UI stuff
-	$("#player-x-show").text(Math.round(player.x));
-	$("#player-y-show").text(Math.round(player.y));
-	$("#player-speed-show").text(player.speed);	
-	$("#player-sight-show").text(player.sight);	
-	$("#player-hp-show").text(player.HP);	
-	$("#player-max-hp-show").text(player.maxHP);	
-	$("#player-stamina-show").text(player.stamina);	
-	$("#player-max-stamina-show").text(player.maxStamina);	
-	$("#player-mine-speed-show").text(player.mineSpeed);	
-	$("#player-tile-index-show").text(player.currentTile);
-	$("#player-tile-x-index-show").text(player.currentTileXIndex);
-	$("#player-tile-y-index-show").text(player.currentTileYIndex);	
+	$('#player-x-show').text(Math.round(player.x));
+	$('#player-y-show').text(Math.round(player.y));
+	$('#player-speed-show').text(player.speed);	
+	$('#player-sight-show').text(player.sight);	
+	$('#player-hp-show').text(Math.round(player.HP));	
+	$('#player-max-hp-show').text(player.maxHP);	
+	$('#player-stamina-show').text(Math.round(player.stamina));	
+	$('#player-max-stamina-show').text(player.maxStamina);	
+	$('#player-warmness-show').text(Math.round(player.warmness));	
+	$('#player-max-warmness-show').text(player.maxWarmness);
+	$('#player-mine-speed-show').text(player.mineSpeed);	
+	$('#player-tile-index-show').text(player.currentTile);
+	$('#player-tile-x-index-show').text(player.currentTileXIndex);
+	$('#player-tile-y-index-show').text(player.currentTileYIndex);	
 
-	$("#grid-collumns-show").text(underground.collumns);
-	$("#grid-rows-show").text(underground.rows);
-	$("#tile-size-show").text(underground.tileSize);
+	$('#grid-collumns-show').text(underground.collumns);
+	$('#grid-rows-show').text(underground.rows);
+	$('#tile-size-show').text(underground.tileSize);
 
 }
 
@@ -1226,5 +1485,63 @@ function render() {
 	player.draw(underground.tileSize);
 
 	player.inventory.draw();
+
+}
+
+// call this function when player dies
+function gameOver() {
+
+	gameLoop = false;
+
+	var alpha = 1;
+
+	var blackoutInterval = setInterval(() => {
+
+		ctx.clearRect(0, 0, W, H);
+
+		ctx.fillStyle = 'rgba(255, 255, 255, ' + alpha + ')';
+		ctx.fillRect(0, 0, W, H);
+
+		alpha -= 0.002;
+
+		if(alpha <= 0) {
+
+			clearInterval(blackoutInterval);
+
+			var textAlpha = 0;
+
+			var textInterval = setInterval(() => {
+
+				ctx.clearRect(0, 0, W, H);
+				ctx.fillStyle = '#000000';
+				ctx.fillRect(0, 0, W, H);
+
+				ctx.font = '200px Arial';
+				ctx.fillStyle = 'rgba(255, 255, 255, ' + textAlpha + ')';
+				ctx.textAlign = 'center';
+				ctx.fillText('You died.', W / 2, H / 2 + 100);
+
+				textAlpha += 0.005;
+
+				if(textAlpha >= 1) {
+
+					clearInterval(textInterval);
+
+					setTimeout(() => {
+
+						ctx.font = '50px Arial';
+						ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+						ctx.textAlign = 'center';
+						ctx.fillText('(refresh the page to start again)', W / 2, H / 2 + H / 4);
+
+					}, 1000);
+
+				}
+
+			}, 10);
+
+		}
+
+	}, 10);
 
 }

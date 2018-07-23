@@ -6,7 +6,7 @@ var underground, camera, mouse, player, keys;
 var lastTime;
 
 
-function Tile(x, y, size, type, hp) {
+function Tile(x, y, size, type, hp, passable) {
 
 	this.x = x;
 	this.y = y;
@@ -15,33 +15,48 @@ function Tile(x, y, size, type, hp) {
 	this.type = type;
 
 	this.hp = hp;
+	this.passable = passable;
 
 	this.red = 0;
 	this.green = 0;
 	this.blue = 0;
 
-	if(this.type == 0) {
+	if(this.type == 'Sky') {
+
+		this.red = 123;
+		this.green = 208;
+		this.blue = 242;
+
+	}		
+	else if(this.type == 'Empty_Ground') {
 
 		this.red = 61;
 		this.green = 37;
 		this.blue = 13;
 
 	}
-	else if(this.type == 1) {
+	else if(this.type == 'Soft_Ground') {
 
 		this.red = 122;
 		this.green = 79;
 		this.blue = 36;
 
-	}	
-	else if(this.type == 2) {
+	}		
+	else if(this.type == 'Hard_Ground') {
+
+		this.red = 119;
+		this.green = 83;
+		this.blue = 46;
+
+	}		
+	else if(this.type == 'Coal') {
 
 		this.red = 40;
 		this.green = 40;
 		this.blue = 40;
 
 	}	
-	else if(this.type == 3) {
+	else if(this.type == 'Stone') {
 
 		this.red = 135;
 		this.green = 135;
@@ -55,28 +70,46 @@ Tile.prototype.setContent = function(content) {
 
 	this.type = content;
 
-	if(this.type == 0) {
+	if(this.type == 'Sky') {
+
+		this.red = 123;
+		this.green = 208;
+		this.blue = 242;
+
+		this.passable = true;
+
+	}		
+	else if(this.type == 'Empty_Ground') {
 
 		this.red = 61;
 		this.green = 37;
 		this.blue = 13;
 
+		this.passable = true;
+
 	}
-	else if(this.type == 1) {
+	else if(this.type == 'Soft_Ground') {
 
 		this.red = 122;
 		this.green = 79;
 		this.blue = 36;
 
-	}	
-	else if(this.type == 2) {
+	}		
+	else if(this.type == 'Hard_Ground') {
+
+		this.red = 119;
+		this.green = 83;
+		this.blue = 46;
+
+	}		
+	else if(this.type == 'Coal') {
 
 		this.red = 40;
 		this.green = 40;
 		this.blue = 40;
 
 	}	
-	else if(this.type == 3) {
+	else if(this.type == 'Stone') {
 
 		this.red = 135;
 		this.green = 135;
@@ -96,7 +129,7 @@ Tile.prototype.flash = function() {
 
 	setTimeout(() => {
 
-		if(this.type == 0) return;
+		if(this.type == 'Empty_Ground') return;
 
 		this.red += flashValue;
 		this.green += flashValue;
@@ -123,13 +156,6 @@ Tile.prototype.draw = function() {
 
 }
 
-/*	Types of tiles (underground):
-		0 - empty 
-		1 - ground
-		2 - coal
-		3 - stone
-*/
-
 function Grid() {
 
 	this.w = 0;
@@ -143,6 +169,15 @@ function Grid() {
 	this.content = [];
 
 	this.tiles = [];
+
+	this.tileTypes = [
+		{name: 'Sky', passable: true, hp: 0},
+		{name: 'Empty_Ground', passable: true, hp: 0},
+		{name: 'Soft_Ground', passable: false, hp: 2},
+		{name: 'Hard_Ground', passable: false, hp: 4},
+		{name: 'Coal', passable: false, hp: 4},
+		{name: 'Stone', passable: false, hp: 10},
+	];	
 
 }
 
@@ -242,14 +277,14 @@ Grid.prototype.damageTile = function(index, damage) {
 
 	thisTile.flash();
 
-	var returnValue = {type: 0, isDead: false};
+	var returnValue = {type: 'Empty_Ground', isDead: false};
 
 	if(thisTile.hp <= 0) {
 
 		returnValue.type = thisTile.type;
 		returnValue.isDead = true;
 
-		thisTile.setContent(0);
+		thisTile.setContent('Empty_Ground');
 
 	}
 
@@ -270,28 +305,53 @@ Grid.prototype.generateTiles = function() {
 
 		for (var j = 0; j < this.rows; j++) {
 
-			var tileType = 0;
+			var tileType, tileTypeObject, tileHp, tilePassable;
 
 			//	creating the weighted array
+			if(i < this.collumns / 2) {
 
-			var contentArray = this.content;
-			var weightedArray = [];
+				tileTypeObject = this.tileTypes.find(elem => {
 
-			for(var k = 0; k < contentArray.length; k++) {
+					return elem.name == 'Sky';
 
-				for (var l = 0; l < contentArray[k].weight; l++) {
+				});
 
-					weightedArray.push(contentArray[k].type);
-					
-				}
+				tileType = tileTypeObject.name;
+				tileHp = tileTypeObject.hp;
+				tilePassable = tileTypeObject.passable;
 
 			}
+			else {
 
-			//	randomly choosing an element from weighted array and assigning it to the tile type
+				var contentArray = this.content;
+				var weightedArray = [];
 
-			var tileType = weightedArray[Math.floor(Math.random() * weightedArray.length)];
+				for(var k = 0; k < contentArray.length; k++) {
 
-			var tile = new Tile(j * this.tileSize, i * this.tileSize, this.tileSize, tileType, tileType * 2);
+					for (var l = 0; l < contentArray[k].weight; l++) {
+
+						weightedArray.push(contentArray[k].type);
+						
+					}
+
+				}
+
+				//	randomly choosing an element from weighted array and assigning it to the tile type
+
+				tileType = weightedArray[Math.floor(Math.random() * weightedArray.length)];
+
+				tileTypeObject = this.tileTypes.find(elem => {
+
+					return elem.name == tileType;
+
+				});
+
+				tileHp = tileTypeObject.hp;
+				tilePassable = tileTypeObject.passable;
+
+			}	
+
+			var tile = new Tile(j * this.tileSize, i * this.tileSize, this.tileSize, tileType, tileHp, tilePassable);
 
 			this.tiles.push(tile);
 
@@ -343,6 +403,8 @@ function Camera(w, h) {
 
 	this.draggable = false;
 
+	this.speed = 2;
+
 }
 
 Camera.prototype.set = function(propName, value) {
@@ -379,10 +441,20 @@ Camera.prototype.reset = function() {
 
 }
 
-Camera.prototype.follow = function(obj) {
+Camera.prototype.follow = function(obj, gridHeight, dt) {
 
-	this.x = obj.x + obj.w / 2 - W / 2;
-	this.y = obj.y - obj.h / 2 - H / 2;
+	if(obj.y < gridHeight / 2) {
+
+		this.x += (obj.x - W / 2 - this.x) * this.speed * dt;
+		this.y += (obj.y - H + H / 3 - this.y) * this.speed * dt;			
+
+	}
+	else {
+
+		this.x += (obj.x - W / 2 - this.x) * this.speed * dt;
+		this.y += (obj.y - H / 2 - this.y) * this.speed * dt;		
+
+	}
 
 }
 
@@ -419,6 +491,7 @@ function Miner(x, y) {
 
 	this.isMining = false;
 	this.canMine = true;
+	this.hasStaminaToMine = true;
 	this.mineSpeed = 250;
 
 	this.inventory = new Inventory();
@@ -500,25 +573,29 @@ Miner.prototype.collisionAndMine = function(grid, tilesAroundPlayer, tilesAdjace
 		var tileIndex = tilesAroundPlayer[i];
 		var tileObject = grid.tiles[tilesAroundPlayer[i]];
 
+		if(!tileObject) continue;
+
+		if(tileObject.passable) continue;
+
 		var collision = checkCollision(this, tileObject, null, 'size');
 
 		if(collision.happened) {
 
 			if(this.isMining) {
 
-				if(tilesAdjacentOnAxis.indexOf(tileIndex) != -1 && tileObject.type != 0) {
+				if(tilesAdjacentOnAxis.indexOf(tileIndex) != -1) {
 
 					var damagedTile = grid.damageTile(tileIndex, 1);
 
 					// collecting stuff
 					if(damagedTile.isDead) {
 
-						if(damagedTile.type == 2) {
+						if(damagedTile.type == 'Coal') {
 
 							this.collect(new Items.Coal());
 
 						}
-						else if(damagedTile.type == 3) {
+						else if(damagedTile.type == 'Stone') {
 
 							this.collect(new Items.Stone());
 
@@ -533,20 +610,16 @@ Miner.prototype.collisionAndMine = function(grid, tilesAroundPlayer, tilesAdjace
 			}
 			else {
 
-				if(tileObject.type != 0) {
+				if(this[vel] < 0) {
 
-					if(this[vel] < 0) {
-
-						this[pos] = tileObject[pos] + tileObject.size;
-
-					}
-					else if(this[vel] > 0) {
-
-						this[pos] = tileObject[pos] - this[asize];
-
-					}	
+					this[pos] = tileObject[pos] + tileObject.size;
 
 				}
+				else if(this[vel] > 0) {
+
+					this[pos] = tileObject[pos] - this[asize];
+
+				}	
 
 			}
 
@@ -564,17 +637,17 @@ Miner.prototype.update = function(dt, worldBoundW, worldBoundH, grid) {
 
 	// Movement
 
-		// check if is moving at all
-		if(keys[87] || keys[38] || keys[83] || keys[40] || keys[65] || keys[37] || keys[68] || keys[39]) {
+	// check if is moving at all
+	if(keys[87] || keys[38] || keys[83] || keys[40] || keys[65] || keys[37] || keys[68] || keys[39]) {
 
-			this.isMoving = true;
+		this.isMoving = true;
 
-		}
-		else {
+	}
+	else {
 
-			this.isMoving = false;
+		this.isMoving = false;
 
-		}
+	}
 
 	if(keys[87] || keys[38]) {
 		// W or Up Arrow
@@ -630,7 +703,7 @@ Miner.prototype.update = function(dt, worldBoundW, worldBoundH, grid) {
 	// when stamina is empty, limit player capabilities
 	if(this.stamina <= 0) {
 
-		this.canMine = false;
+		this.hasStaminaToMine = false;
 		this.velX *= 0.5;
 		this.velY *= 0.5;
 
@@ -639,12 +712,12 @@ Miner.prototype.update = function(dt, worldBoundW, worldBoundH, grid) {
 	}
 	else if(this.stamina >= 0 && this.canMine) {
 
-		this.canMine = true;		
+		this.hasStaminaToMine = true;		
 
 	}
 
 	// disable mining
-	if(!this.canMine) {
+	if(!this.canMine || !this.hasStaminaToMine) {
 
 		this.isMining = false;
 
@@ -722,8 +795,25 @@ Miner.prototype.update = function(dt, worldBoundW, worldBoundH, grid) {
 			  	   .set('maxValue', this.maxStamina);	
 
 	this.warmnessBar.set('value', this.warmness)
-			  		.set('maxValue', this.maxWarmness);				  	   
+			  		.set('maxValue', this.maxWarmness);	
 
+
+	// set sight to max if is not underground	
+	try {
+
+		if(grid.tiles[this.currentTile].type == 'Sky') {
+
+			if(this.sight < 18) this.sight++;
+
+		}
+		else {
+
+			if(this.sight > 3) this.sight--;
+
+		}
+
+	}		  				  					  	   
+	catch(e) {}
 	
 	// check for death
 	if(this.HP <= 0) {
@@ -1150,17 +1240,14 @@ $(window).ready(() => {
 
 	underground = new Grid();
 
-	underground.setCollumns(120);
-	underground.setRows(200);
+	underground.setCollumns(200);
+	underground.setRows(400);
 	underground.setTileSize(50);
 
-	var contentTypesArray = [{type: 1, weight: 60}, {type: 2, weight: 2}, {type: 3, weight: 1}];
+	var contentTypesArray = [{type: 'Soft_Ground', weight: 40}, {type: 'Hard_Ground', weight: 20}, {type: 'Coal', weight: 4}, {type: 'Stone', weight: 2}];
 
 	underground.setContentPercentage(contentTypesArray);
 	underground.generateTiles();
-
-	underground.setTileCollumnContent(7, 0);
-	underground.setTileRowContent(7, 0);
 
 	camera = new Camera(W, H);
 
@@ -1177,8 +1264,8 @@ $(window).ready(() => {
 
 	mainLoop();
 
-	player.set('x', 350);
-	player.set('y', 350);
+	player.set('x', 5000);
+	player.set('y', 4950);
 
 	// slider inputs max & min values
 	$('#player-x').attr({
@@ -1198,7 +1285,7 @@ $(window).ready(() => {
 
 	$('#player-sight').attr({
 		min: 3,
-		max: 15
+		max: 18
 	});		
 
 	$('#player-hp').attr({
@@ -1265,8 +1352,8 @@ $(window).keydown(event => {
 	// cheats
 	if(event.which == 16) {
 
-		player.setSpeed(500);
-		player.setMineSpeed(1);
+		player.set('speed', 500);
+		player.set('mineSpeed', 1);
 
 	}
 
@@ -1282,8 +1369,8 @@ $(window).keyup(event => {
 	// cheats
 	if(event.which == 16) {
 
-		player.setSpeed(200);
-		player.setMineSpeed(250);
+		player.set('speed', 200);
+		player.set('mineSpeed', 250);
 
 	}
 
@@ -1450,7 +1537,7 @@ function mainLoop() {
 
 function update(dt) {
 	player.update(dt, underground.w, underground.h, underground);
-	camera.follow(player);
+	camera.follow(player, underground.h, dt);
 	underground.update();
 	player.getTile(underground.tileSize, underground.rows);
 

@@ -1230,7 +1230,7 @@ $(window).ready(() => {
 	canvas = document.getElementById("canvas");
 	ctx = canvas.getContext("2d");
 
-	canvas.width = window.innerWidth - 250;
+	canvas.width = window.innerWidth;
 	canvas.height = window.innerHeight;
 
 	W = canvas.width;
@@ -1378,7 +1378,7 @@ $(window).keyup(event => {
 
 $(window).resize(event => {
 
-	canvas.width = window.innerWidth - 250;
+	canvas.width = window.innerWidth;
 	canvas.height = window.innerHeight;
 
 	W = canvas.width;
